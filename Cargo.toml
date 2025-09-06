@@ -1,0 +1,79 @@
+[package]
+name = "sanji_engine"
+version = "0.1.0"
+edition = "2021"
+authors = ["Sanji Game Engine"]
+description = "A modern game engine written in Rust"
+license = "MIT"
+
+[dependencies]
+# 窗口和事件系统
+winit = "0.29"
+
+# 图形渲染
+wgpu = "0.18"
+
+# 数学库
+glam = "0.24"
+bytemuck = { version = "1.14", features = ["derive"] }
+
+# ECS系统
+specs = "0.20"
+specs-derive = "0.4"
+
+# 序列化
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# 错误处理和日志
+anyhow = "1.0"
+thiserror = "1.0"
+log = "0.4"
+env_logger = "0.10"
+
+# 异步运行时
+tokio = { version = "1.0", features = ["full"] }
+futures = "0.3"
+pollster = "0.3"
+
+# 时间处理
+chrono = { version = "0.4", features = ["serde"] }
+rand = "0.8"
+
+# 图像处理
+image = "0.24"
+
+# 时间处理
+instant = "0.1"
+
+# 物理引擎(可选)
+rapier3d = { version = "0.17", optional = true }
+
+# 音频(可选)
+rodio = { version = "0.17", optional = true }
+
+[features]
+default = ["physics", "audio"]
+physics = ["rapier3d"]
+audio = ["rodio"]
+
+[[bin]]
+name = "sanji_engine"
+path = "src/main.rs"
+
+[[example]]
+name = "simple_demo"
+path = "examples/simple_demo.rs"
+
+[[example]]
+name = "basic_demo"
+path = "examples/basic_demo.rs"
+
+[workspace]
+members = [
+    ".",
+    "engine_core",
+    "engine_render",
+    "engine_ecs",
+    "engine_assets"
+]

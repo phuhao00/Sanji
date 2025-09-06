@@ -1,0 +1,12 @@
+# 这个文件确保assets目录被包含在git中
+# 资产文件将放置在这个目录中
+
+# 目录结构建议:
+# assets/
+# ├── textures/     # 纹理文件 (.png, .jpg, .dds 等)
+# ├── models/       # 3D模型 (.obj, .gltf, .fbx 等)
+# ├── shaders/      # 着色器 (.wgsl, .hlsl, .glsl 等)
+# ├── audio/        # 音频文件 (.ogg, .wav, .mp3 等)
+# ├── fonts/        # 字体文件 (.ttf, .otf 等)
+# ├── materials/    # 材质定义 (.json, .mat 等)
+# └── scenes/       # 场景文件 (.scene, .json 等)

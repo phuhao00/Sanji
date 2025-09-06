@@ -1,0 +1,57 @@
+# Rust相关
+/target/
+Cargo.lock
+*.pdb
+
+# IDE相关
+/.vscode/
+/.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统相关
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
+
+# 游戏资源临时文件
+/assets/cache/
+/assets/temp/
+
+# 构建输出
+/build/
+/dist/
+
+# 测试输出
+/coverage/
+
+# 文档构建
+/book/
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# 运行时文件
+*.pid
+*.seed
+*.pid.lock
+
+# 环境配置
+.env
+.env.local
+.env.*.local
+
+# 性能分析文件
+flamegraph.svg
+perf.data
+perf.data.old
+
+# 内存分析
+*.heap
+*.memprof

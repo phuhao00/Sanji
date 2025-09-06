@@ -1,0 +1,57 @@
+# Sanji游戏引擎配置文件示例
+# 这个文件展示了引擎的各种配置选项
+
+[window]
+title = "Sanji游戏引擎"
+width = 1920
+height = 1080
+vsync = true
+resizable = true
+
+[render]
+backend = "auto"        # "auto", "vulkan", "metal", "dx12", "dx11", "gl"
+msaa_samples = 4        # 多重采样抗锯齿样本数 (1, 2, 4, 8)
+max_texture_size = 8192 # 最大纹理尺寸
+
+[assets]
+asset_folder = "assets"
+cache_size = 536870912  # 缓存大小 (字节) - 512MB
+
+[physics]
+enabled = true
+gravity = [0.0, -9.81, 0.0]  # 重力向量
+timestep = 0.016666667        # 物理时间步长 (60Hz)
+
+[audio]
+enabled = true
+master_volume = 1.0
+max_sources = 64
+
+[input]
+# 输入映射配置
+[input.actions]
+move_forward = ["KeyW", "GamepadDPadUp"]
+move_backward = ["KeyS", "GamepadDPadDown"]  
+move_left = ["KeyA", "GamepadDPadLeft"]
+move_right = ["KeyD", "GamepadDPadRight"]
+jump = ["Space", "GamepadSouth"]
+crouch = ["ControlLeft", "GamepadEast"]
+primary_action = ["MouseLeft", "GamepadWest"]
+secondary_action = ["MouseRight", "GamepadNorth"]
+
+[input.axes]
+horizontal = { negative = "KeyA", positive = "KeyD" }
+vertical = { negative = "KeyS", positive = "KeyW" }
+mouse_x = "MouseX"
+mouse_y = "MouseY"
+
+[debug]
+show_fps = true
+show_stats = false
+wireframe = false
+show_bounding_boxes = false
+
+[logging]
+level = "info"          # "trace", "debug", "info", "warn", "error"
+file_output = false
+console_output = true
