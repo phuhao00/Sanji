@@ -20,6 +20,10 @@ pub mod events;
 pub mod physics;
 pub mod audio;
 pub mod animation;
+pub mod ui;
+pub mod particles;
+pub mod serialization;
+pub mod performance;
 
 pub use core::*;
 
