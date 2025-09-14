@@ -9,8 +9,18 @@ use serde::{Deserialize, Serialize};
 pub enum UIEvent {
     /// 鼠标事件
     Mouse(MouseUIEvent),
+    /// 鼠标移动
+    MouseMove { position: Vec2 },
+    /// 鼠标按钮按下
+    MouseButtonDown { button: MouseButton, position: Vec2 },
+    /// 鼠标按钮释放
+    MouseButtonUp { button: MouseButton, position: Vec2 },
     /// 键盘事件
     Keyboard(KeyboardUIEvent),
+    /// 键盘按键按下
+    KeyDown { key: KeyCode },
+    /// 文本输入
+    TextInput { text: String },
     /// 触摸事件
     Touch(TouchUIEvent),
     /// 焦点事件
@@ -358,18 +368,20 @@ impl UIEventManager {
                 }
             }
             MouseUIEventType::MouseMove => {
-                if let Some(ref mut drag_state) = self.drag_state {
-                    drag_state.current_position = position;
+                if let Some(ref drag_state) = self.drag_state {
+                    let button = drag_state.button;
+                    let target = drag_state.target;
+                    let start_position = drag_state.start_position;
                     
                     // 发送拖拽事件
-                    let drag_distance = (position - drag_state.start_position).length();
+                    let drag_distance = (position - start_position).length();
                     if drag_distance > 3.0 { // 3像素的拖拽阈值
                         self.emit_event(UIEvent::Mouse(MouseUIEvent {
                             event_type: MouseUIEventType::Drag,
                             position,
-                            button: Some(drag_state.button),
+                            button: Some(button),
                             modifiers: KeyModifiers::default(),
-                            target: Some(drag_state.target),
+                            target: Some(target),
                             click_count: 0,
                         }));
                     }
@@ -476,12 +488,12 @@ impl UIEventManager {
         }
     }
 
-    /// 命中测试 - 确定鼠标位置下的UI元素
-    fn hit_test(&self, position: Vec2) -> Option<Entity> {
-        // 这里应该实现实际的命中测试逻辑
-        // 需要与UI布局系统集成
-        None
-    }
+   /// 命中测试 - 确定鼠标位置下的UI元素
+   fn hit_test_private(&self, _position: Vec2) -> Option<Entity> {
+       // 这里应该实现实际的命中测试逻辑
+       // 需要与UI布局系统集成
+       None
+   }
 
     /// 检测双击
     fn detect_double_click(&mut self, target: Entity, position: Vec2) -> u32 {
@@ -538,6 +550,29 @@ impl UIEventManager {
 impl Default for UIEventManager {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl UIEventManager {
+    /// 轮询事件
+    pub fn poll_event(&mut self) -> Option<UIEvent> {
+        if !self.event_queue.is_empty() {
+            Some(self.event_queue.remove(0))
+        } else {
+            None
+        }
+    }
+
+    /// 发送事件
+    pub fn send_event(&mut self, event: UIEvent) {
+        self.event_queue.push(event);
+    }
+
+    /// 执行命中测试
+    pub fn hit_test(&self, _position: Vec2) -> Option<Entity> {
+        // 这里需要与UI布局系统集成
+        // 暂时返回None，需要在实际使用时实现
+        None
     }
 }
 

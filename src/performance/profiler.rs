@@ -28,12 +28,23 @@ struct ProfileSection {
 }
 
 /// 帧性能数据
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 struct FrameProfileData {
     frame_number: u64,
     frame_start: Instant,
     sections: HashMap<String, SectionData>,
     total_frame_time: Duration,
+}
+
+impl Default for FrameProfileData {
+    fn default() -> Self {
+        Self {
+            frame_number: 0,
+            frame_start: Instant::now(),
+            sections: HashMap::new(),
+            total_frame_time: Duration::ZERO,
+        }
+    }
 }
 
 /// 区域数据
@@ -169,9 +180,13 @@ impl Profiler {
             section_data.duration = duration;
         }
 
+        // 获取父级名称
+        let parent_name = self.call_stack.last().cloned();
+        let section_name = name.to_string();
+
         // 更新总体统计
-        let section = self.sections.entry(name.to_string()).or_insert_with(|| ProfileSection {
-            name: name.to_string(),
+        let section = self.sections.entry(section_name.clone()).or_insert_with(|| ProfileSection {
+            name: section_name.clone(),
             total_time: Duration::ZERO,
             call_count: 0,
             max_time: Duration::ZERO,
@@ -179,7 +194,7 @@ impl Profiler {
             average_time: Duration::ZERO,
             last_time: duration,
             children: Vec::new(),
-            parent: self.call_stack.last().cloned(),
+            parent: parent_name.clone(),
         });
 
         section.total_time += duration;
@@ -189,11 +204,11 @@ impl Profiler {
         section.average_time = section.total_time / section.call_count as u32;
         section.last_time = duration;
 
-        // 更新父子关系
-        if let Some(parent_name) = &section.parent {
-            if let Some(parent_section) = self.sections.get_mut(parent_name) {
-                if !parent_section.children.contains(&name.to_string()) {
-                    parent_section.children.push(name.to_string());
+        // 分离更新父子关系
+        if let Some(parent_name) = parent_name {
+            if let Some(parent_section) = self.sections.get_mut(&parent_name) {
+                if !parent_section.children.contains(&section_name) {
+                    parent_section.children.push(section_name);
                 }
             }
         }

@@ -109,12 +109,12 @@ impl SceneGraph {
         if let Some(parent_entity) = parent {
             // 检查父节点是否存在
             if !self.nodes.contains_key(&parent_entity) {
-                return Err(EngineError::AssetError(format!("父节点不存在: {:?}", parent_entity)));
+                return Err(EngineError::AssetError(format!("父节点不存在: {:?}", parent_entity)).into());
             }
 
             // 检查是否会造成循环引用
             if self.would_create_cycle(entity, parent_entity) {
-                return Err(EngineError::AssetError("添加实体会造成循环引用".to_string()));
+                return Err(EngineError::AssetError("添加实体会造成循环引用".to_string()).into());
             }
 
             node.parent = Some(parent_entity);
@@ -164,17 +164,17 @@ impl SceneGraph {
     /// 设置实体的父节点
     pub fn set_parent(&mut self, child: Entity, new_parent: Option<Entity>) -> EngineResult<()> {
         if !self.nodes.contains_key(&child) {
-            return Err(EngineError::AssetError(format!("子节点不存在: {:?}", child)));
+            return Err(EngineError::AssetError(format!("子节点不存在: {:?}", child)).into());
         }
 
         if let Some(parent) = new_parent {
             if !self.nodes.contains_key(&parent) {
-                return Err(EngineError::AssetError(format!("父节点不存在: {:?}", parent)));
+                return Err(EngineError::AssetError(format!("父节点不存在: {:?}", parent)).into());
             }
 
             // 检查循环引用
             if self.would_create_cycle(child, parent) {
-                return Err(EngineError::AssetError("设置父节点会造成循环引用".to_string()));
+                return Err(EngineError::AssetError("设置父节点会造成循环引用".to_string()).into());
             }
         }
 

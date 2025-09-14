@@ -1,7 +1,7 @@
 //! 粒子特效系统
 
 use crate::math::{Vec3, Vec2, Quat};
-use crate::particles::{EmitterConfig, EmitterId, ParticleSystemManager, EmissionShape, BlendMode, SizeOverLifetime, VelocityOverLifetime, ColorOverLifetime, SimulationSpace};
+use crate::particles::{EmitterConfig, EmitterId, ParticleSystemManager, EmissionShape, EmitterBlendMode, SizeOverLifetime, VelocityOverLifetime, ColorOverLifetime, SimulationSpace};
 use crate::ecs::{World, Entity};
 use crate::audio::AudioSystem;
 use std::collections::HashMap;

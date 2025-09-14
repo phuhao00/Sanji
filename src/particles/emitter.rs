@@ -271,10 +271,11 @@ pub struct ParticleEmitter {
 
 impl ParticleEmitter {
     pub fn new(id: EmitterId, config: EmitterConfig) -> Self {
+        let max_particles = config.max_particles;
         Self {
             id,
             config,
-            particles: Vec::with_capacity(config.max_particles),
+            particles: Vec::with_capacity(max_particles),
             position: Vec3::ZERO,
             rotation: Quat::IDENTITY,
             scale: Vec3::ONE,
@@ -335,8 +336,8 @@ impl ParticleEmitter {
 
     /// 设置配置
     pub fn set_config(&mut self, config: EmitterConfig) {
-        self.config = config;
         self.particles.reserve(config.max_particles);
+        self.config = config;
     }
 
     /// 立即发射爆发粒子
@@ -392,7 +393,7 @@ impl ParticleEmitter {
                 break;
             }
 
-            let mut particle = Particle::new();
+            let mut particle = Particle::new(0, Vec3::ZERO, Vec3::ZERO);
             
             // 设置初始位置
             particle.position = self.position + self.get_emission_position(&mut rng);
@@ -406,7 +407,7 @@ impl ParticleEmitter {
             particle.max_lifetime = particle.lifetime;
             particle.size = rng.gen_range(self.config.start_size_range.0..=self.config.start_size_range.1);
             particle.color = self.config.start_color;
-            particle.state = ParticleState::Alive;
+            particle.lifetime = 1.0; // Use lifetime field
 
             self.particles.push(particle);
         }
@@ -540,14 +541,14 @@ impl ParticleEmitter {
     /// 更新粒子
     fn update_particles(&mut self, delta_time: f32) {
         for particle in &mut self.particles {
-            if particle.state != ParticleState::Alive {
+            if particle.lifetime <= 0.0 { // Check lifetime instead of state
                 continue;
             }
 
             // 更新生命周期
             particle.lifetime -= delta_time;
             if particle.lifetime <= 0.0 {
-                particle.state = ParticleState::Dead;
+                particle.lifetime = 0.0; // Set lifetime to 0 instead of Dead state
                 continue;
             }
 
@@ -587,7 +588,7 @@ impl ParticleEmitter {
 
     /// 清理死亡粒子
     pub fn cleanup_dead_particles(&mut self) {
-        self.particles.retain(|p| p.state == ParticleState::Alive);
+        self.particles.retain(|p| p.lifetime > 0.0); // Check lifetime instead of state
     }
 
     /// 清除所有粒子
@@ -597,7 +598,7 @@ impl ParticleEmitter {
 
     /// 获取活跃粒子数
     pub fn get_active_particle_count(&self) -> usize {
-        self.particles.iter().filter(|p| p.state == ParticleState::Alive).count()
+        self.particles.iter().filter(|p| p.lifetime > 0.0).count() // Check lifetime instead of state
     }
 
     /// 渲染粒子

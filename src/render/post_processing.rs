@@ -2,6 +2,7 @@
 
 use crate::math::{Vec2, Vec3, Vec4};
 use wgpu::*;
+use wgpu::util::DeviceExt;
 use std::collections::HashMap;
 
 /// 后处理效果类型

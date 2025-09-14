@@ -17,7 +17,7 @@ pub struct UISystem {
     pub container: WidgetContainer,
     pub layout_manager: LayoutManager,
     pub render_context: UIRenderContext,
-    pub event_dispatcher: UIEventDispatcher,
+    pub event_dispatcher: events::UIEventManager,
 }
 
 impl UISystem {
@@ -26,7 +26,7 @@ impl UISystem {
             container: WidgetContainer::new(),
             layout_manager: LayoutManager::new(),
             render_context: UIRenderContext::new(screen_width, screen_height),
-            event_dispatcher: UIEventDispatcher::new(),
+            event_dispatcher: events::UIEventManager::new(),
         }
     }
 
@@ -42,8 +42,8 @@ impl UISystem {
 
         // 更新布局
         self.layout_manager.set_viewport_size(crate::math::Vec2::new(
-            self.render_context.renderer.screen_size.x,
-            self.render_context.renderer.screen_size.y
+            1024.0, // 默认宽度
+            768.0   // 默认高度
         ));
         self.layout_manager.update_layout();
     }

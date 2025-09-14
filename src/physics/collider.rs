@@ -2,6 +2,8 @@
 
 use crate::math::{Vec3, AABB, BoundingSphere};
 use serde::{Deserialize, Serialize};
+use specs::{Component, VecStorage};
+use specs_derive::Component;
 
 /// 碰撞体形状类型
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -111,7 +113,7 @@ impl ColliderShape {
                 
                 for (relative_pos, shape) in shapes.iter().skip(1) {
                     let shape_aabb = shape.compute_aabb(
-                        position + rotation * relative_pos, 
+                        position + rotation * (*relative_pos), 
                         rotation
                     );
                     combined_aabb = combined_aabb.union(&shape_aabb);
@@ -161,7 +163,7 @@ impl ColliderShape {
                     return BoundingSphere::new(position, 1.0);
                 }
                 
-                let mut max_radius = 0.0;
+                let mut max_radius: f32 = 0.0;
                 for (relative_pos, shape) in shapes {
                     let shape_sphere = shape.compute_bounding_sphere(position + *relative_pos);
                     let distance = (shape_sphere.center - position).length() + shape_sphere.radius;
@@ -249,7 +251,8 @@ impl ColliderShape {
 }
 
 /// 碰撞体组件
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, Clone, Serialize, Deserialize)]
+#[storage(VecStorage)]
 pub struct Collider {
     /// 碰撞体形状
     pub shape: ColliderShape,

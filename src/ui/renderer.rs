@@ -36,7 +36,7 @@ pub struct UIBatch {
 }
 
 /// UI着色器类型
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum UIShaderType {
     Solid,      // 纯色
     Textured,   // 纹理

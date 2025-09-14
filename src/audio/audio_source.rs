@@ -3,6 +3,7 @@
 use crate::math::Vec3;
 use serde::{Deserialize, Serialize};
 use specs::{Component, VecStorage};
+use specs_derive::Component;
 
 /// 音频源组件 - 3D空间中的音频发射器
 #[derive(Component, Debug, Clone, Serialize, Deserialize)]

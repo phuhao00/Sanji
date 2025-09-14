@@ -4,7 +4,7 @@ use crate::{EngineResult, EngineError};
 use crate::ecs::component::*;
 use crate::ecs::system::*;
 
-use specs::{World, WorldExt, DispatcherBuilder, Dispatcher, RunNow};
+use specs::{World, WorldExt, DispatcherBuilder, Dispatcher, RunNow, Component};
 
 /// ECS世界包装器
 pub struct ECSWorld {
@@ -112,9 +112,9 @@ impl ECSWorld {
 
     /// 删除实体
     pub fn delete_entity(&mut self, entity: specs::Entity) -> EngineResult<()> {
-        self.world
+        Ok(self.world
             .delete_entity(entity)
-            .map_err(|e| EngineError::RenderError(format!("删除实体失败: {:?}", e)))
+            .map_err(|e| EngineError::RenderError(format!("删除实体失败: {:?}", e)))?)
     }
 }
 

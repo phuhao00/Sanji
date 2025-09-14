@@ -168,7 +168,7 @@ impl InputMap {
     }
 
     /// 绑定鼠标轴
-    pub fn bind_mouse_axis(&mut self, axis_name: impl Into<String>) {
+    pub fn bind_mouse_axis(&mut self, axis_name: impl Into<String> + AsRef<str>) {
         let axis_type = match axis_name.as_ref() {
             name if name.contains("x") => MouseAxisType::X,
             name if name.contains("y") => MouseAxisType::Y,
@@ -271,7 +271,7 @@ impl InputMap {
     ) -> bool {
         let results: Vec<bool> = config.bindings.iter().map(|binding| {
             match binding {
-                InputBinding::Key(key) => keyboard.is_key_pressed(*key),
+                InputBinding::Key(key) => keyboard.is_key_just_pressed(*key),
                 InputBinding::Mouse(button) => mouse.is_button_pressed(*button),
                 InputBinding::GamepadButton(button) => {
                     gamepad.map_or(false, |g| g.is_button_pressed(*button))
@@ -347,10 +347,10 @@ impl InputMap {
         let mut value = match &config.binding {
             InputBinding::KeyAxis { negative_key, positive_key, negative_value, positive_value } => {
                 let mut axis_value = 0.0;
-                if keyboard.is_key_pressed(*negative_key) {
+                if keyboard.is_key_just_pressed(*negative_key) {
                     axis_value += *negative_value;
                 }
-                if keyboard.is_key_pressed(*positive_key) {
+                if keyboard.is_key_just_pressed(*positive_key) {
                     axis_value += *positive_value;
                 }
                 axis_value

@@ -6,15 +6,19 @@ authors = ["Sanji Game Engine"]
 description = "A modern game engine written in Rust"
 license = "MIT"
 
+[lib]
+name = "sanji_engine"
+path = "src/lib.rs"
+
 [dependencies]
 # 窗口和事件系统
 winit = "0.29"
 
 # 图形渲染
-wgpu = "0.18"
+wgpu = "0.19"
 
 # 数学库
-glam = "0.24"
+glam = { version = "0.24", features = ["serde"] }
 bytemuck = { version = "1.14", features = ["derive"] }
 
 # ECS系统
@@ -55,6 +59,13 @@ image = "0.24"
 # 时间处理
 instant = "0.1"
 
+# GUI框架 - 用于编辑器界面
+egui = "0.28"
+eframe = { version = "0.28", default-features = false, features = ["glow", "default_fonts"] }
+egui_extras = { version = "0.28", features = ["all_loaders"] }
+egui_file = "0.17"
+rfd = "0.14"
+
 # 物理引擎(可选)
 rapier3d = { version = "0.17", optional = true }
 
@@ -70,6 +81,10 @@ audio = ["rodio"]
 name = "sanji_engine"
 path = "src/main.rs"
 
+[[bin]]
+name = "sanji_window"
+path = "src/window_demo.rs"
+
 [[example]]
 name = "simple_demo"
 path = "examples/simple_demo.rs"
@@ -83,10 +98,3 @@ name = "comprehensive_demo"
 path = "examples/comprehensive_demo.rs"
 
 [workspace]
-members = [
-    ".",
-    "engine_core",
-    "engine_render",
-    "engine_ecs",
-    "engine_assets"
-]

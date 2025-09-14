@@ -3,13 +3,22 @@
 use crate::physics::{PhysicsWorld, PhysicsRigidBody, Collider, CollisionEvent};
 use crate::ecs::{Transform, ReadStorage, WriteStorage, System, SystemData, Join, World, WorldExt};
 use crate::math::Vec3;
-use specs::Entity;
+use specs::{Entity, Entities};
 use std::collections::HashMap;
 
 /// 物理系统 - 将物理世界与ECS集成
 pub struct PhysicsSystem {
     physics_world: PhysicsWorld,
     entity_to_physics: HashMap<Entity, Entity>, // ECS实体到物理实体的映射
+}
+
+impl Default for PhysicsSystem {
+    fn default() -> Self {
+        Self {
+            physics_world: PhysicsWorld::new(crate::physics::world::PhysicsConfig::default()),
+            entity_to_physics: HashMap::new(),
+        }
+    }
 }
 
 impl PhysicsSystem {
@@ -52,17 +61,19 @@ impl PhysicsSystem {
 
 impl<'a> System<'a> for PhysicsSystem {
     type SystemData = (
+        Entities<'a>,
         WriteStorage<'a, Transform>,
         ReadStorage<'a, PhysicsRigidBody>,
         ReadStorage<'a, Collider>,
         specs::Read<'a, crate::ecs::TimeResource>,
     );
 
-    fn run(&mut self, (mut transforms, rigid_bodies, colliders, time): Self::SystemData) {
+    fn run(&mut self, (entities, mut transforms, rigid_bodies, colliders, time): Self::SystemData) {
         let delta_time = time.delta_time;
         
-        // 1. 同步ECS Transform到物理世界
-        for (entity, transform, rigid_body) in (&*transforms.join().collect::<Vec<_>>().iter().map(|(e, t)| (*e, t)).collect::<Vec<_>>(), &rigid_bodies, &*rigid_bodies.join().collect::<Vec<_>>()).0 {
+        // 1. 同步ECS Transform到物理世界  
+        use specs::Join;
+        for (entity, transform, rigid_body) in (&entities, &transforms, &rigid_bodies).join() {
             if let Some(physics_rb) = self.physics_world.get_rigid_body_mut(entity) {
                 // 只有在Transform被修改时才更新物理世界
                 if transform.dirty {
@@ -73,7 +84,7 @@ impl<'a> System<'a> for PhysicsSystem {
         }
         
         // 2. 更新碰撞体边界
-        for (entity, transform, collider) in (&*transforms.join().collect::<Vec<_>>().iter().map(|(e, t)| (*e, t)).collect::<Vec<_>>(), &*transforms.join().collect::<Vec<_>>(), &colliders).0 {
+        for (entity, transform, collider) in (&entities, &transforms, &colliders).join() {
             if let Some(physics_collider) = self.physics_world.get_collider(entity) {
                 // 这里需要更新碰撞体的边界信息
                 // 由于borrowing的限制，我们需要重构这部分代码
@@ -87,7 +98,7 @@ impl<'a> System<'a> for PhysicsSystem {
         }
         
         // 4. 同步物理世界的结果回ECS Transform
-        for (entity, mut transform) in (&*transforms.join().collect::<Vec<_>>().iter().map(|(e, t)| (*e, t)).collect::<Vec<_>>(), &mut transforms).0 {
+        for (entity, mut transform) in (&entities, &mut transforms).join() {
             if let Some(physics_rb) = self.physics_world.get_rigid_body(entity) {
                 // 只有动态刚体才会更新Transform
                 if physics_rb.is_dynamic() {

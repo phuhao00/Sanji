@@ -27,4 +27,6 @@ pub use specs::{
     System,
     Builder,
     WorldExt,
+    World,
+    Join,
 };

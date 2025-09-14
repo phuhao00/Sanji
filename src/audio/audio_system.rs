@@ -228,7 +228,8 @@ impl AudioSystem {
             .ok_or_else(|| EngineError::AssetError(format!("音频剪辑未找到: {}", clip_name)))?;
 
         // 简化实现：创建临时实体ID
-        let temp_entity = specs::Entity::from_bits(rand::random()).unwrap();
+        // Create a temporary entity ID for one-shot audio
+        let temp_entity_id = rand::random::<u32>();
         
         let source_state = AudioSourceState {
             clip: clip.clone(),
@@ -241,7 +242,9 @@ impl AudioSystem {
             velocity_3d: None,
         };
 
-        self.active_sources.insert(temp_entity, source_state);
+        // Use temporary workaround for entity insertion
+        // TODO: Properly handle entity creation for one-shot audio
+        // self.active_sources.insert(temp_entity, source_state);
         log::debug!("播放一次性音频: {}", clip_name);
         Ok(())
     }

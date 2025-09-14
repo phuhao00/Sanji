@@ -5,7 +5,7 @@ use crate::ecs::{ECSWorld, Entity, EntityBuilder, Prefabs};
 use crate::scene::SceneGraph;
 use crate::render::Camera;
 
-use specs::WorldExt;
+use specs::{WorldExt, Builder};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use glam::{Vec3, Quat};
@@ -262,8 +262,8 @@ impl Scene {
             entities: self.entity_map.keys().cloned().collect(),
         };
         
-        serde_json::to_string_pretty(&scene_data)
-            .map_err(|e| EngineError::SerializationError(e))
+        Ok(serde_json::to_string_pretty(&scene_data)
+            .map_err(|e| EngineError::SerializationError(e))?)
     }
 
     /// 清空场景
@@ -297,7 +297,7 @@ impl Scene {
             self.entity_map.insert(new_name.into(), entity);
             Ok(())
         } else {
-            Err(EngineError::AssetError(format!("未找到实体: {}", old_name)))
+            Err(EngineError::AssetError(format!("未找到实体: {}", old_name)).into())
         }
     }
 }

@@ -285,6 +285,6 @@ impl RenderSystem {
 
     /// 设置清屏颜色
     pub fn set_clear_color(&mut self, r: f32, g: f32, b: f32, a: f32) {
-        self.clear_color = wgpu::Color { r, g, b, a };
+        self.clear_color = wgpu::Color { r: r as f64, g: g as f64, b: b as f64, a: a as f64 };
     }
 }

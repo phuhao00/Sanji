@@ -467,7 +467,7 @@ impl MemoryTracker {
 
     /// 计算泄漏可能性
     fn calculate_leak_likelihood(&self, info: &AllocationInfo, age: Duration) -> f32 {
-        let mut likelihood = 0.0;
+        let mut likelihood: f32 = 0.0;
 
         // 年龄因素
         let age_hours = age.as_secs_f32() / 3600.0;

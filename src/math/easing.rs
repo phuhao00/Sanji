@@ -3,7 +3,7 @@
 use std::f32::consts::PI;
 
 /// 缓动函数类型
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub enum EasingType {
     // 线性
     Linear,
@@ -143,7 +143,7 @@ impl Easing {
     // 正弦缓动
     fn sine_in(t: f32) -> f32 { 1.0 - (t * PI / 2.0).cos() }
     fn sine_out(t: f32) -> f32 { (t * PI / 2.0).sin() }
-    fn sine_in_out(t: f32) -> f32 { -(t * PI).cos() - 1.0) / 2.0 }
+    fn sine_in_out(t: f32) -> f32 { (-(t * PI).cos() - 1.0) / 2.0 }
 
     // 指数缓动
     fn expo_in(t: f32) -> f32 {

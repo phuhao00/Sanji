@@ -10,11 +10,11 @@ use crate::time::TimeManager;
 use crate::events::EventSystem;
 
 use winit::{
-    application::ApplicationHandler,
-    event::{ElementState, KeyEvent, WindowEvent},
-    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
-    keyboard::{KeyCode, PhysicalKey},
-    window::{Window, WindowId, WindowAttributes},
+    event::{ElementState, Event, MouseButton, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+    window::{Window, WindowId, WindowBuilder},
+    dpi::PhysicalPosition,
+    keyboard::KeyCode,
 };
 
 use std::sync::Arc;
@@ -59,14 +59,67 @@ impl Engine {
 
     /// 运行引擎
     pub fn run(mut self) -> EngineResult<()> {
-        let event_loop = EventLoop::new().map_err(|e| EngineError::RenderError(e.to_string()))?;
-        event_loop.set_control_flow(ControlFlow::Poll);
+        let event_loop = EventLoop::new()?;
+        
+        // 创建窗口
+        let window = WindowBuilder::new()
+            .with_title(&self.config.window.title)
+            .with_inner_size(winit::dpi::LogicalSize::new(
+                self.config.window.width,
+                self.config.window.height,
+            ))
+            .with_resizable(self.config.window.resizable)
+            .build(&event_loop)
+            .map_err(|e| EngineError::RenderError(e.to_string()))?;
+        
+        let window = Arc::new(window);
+        
+        // 初始化渲染系统
+        match pollster::block_on(RenderSystem::new(window.clone(), &self.config.render)) {
+            Ok(render_system) => {
+                self.render_system = Some(render_system);
+                log::info!("渲染系统初始化成功");
+            }
+            Err(e) => {
+                log::error!("渲染系统初始化失败: {}", e);
+                return Err(e);
+            }
+        }
+        
+        self.window = Some(window);
+        log::info!("引擎窗口创建成功");
         
         log::info!("启动游戏引擎主循环...");
         self.running = true;
         
-        event_loop.run_app(&mut self)
-            .map_err(|e| EngineError::RenderError(e.to_string()))?;
+        event_loop.run(move |event, window_target| {
+            match event {
+                Event::WindowEvent { window_id, event } => {
+                    self.handle_window_event(window_id, event);
+                }
+                Event::AboutToWait => {
+                    // 主更新循环
+                    if let Err(e) = self.update() {
+                        log::error!("引擎更新错误: {}", e);
+                    }
+                    
+                    // 请求重绘
+                    if let Some(window) = &self.window {
+                        window.request_redraw();
+                    }
+                }
+                Event::WindowEvent { event: WindowEvent::RedrawRequested, .. } => {
+                    if let Err(e) = self.render() {
+                        log::error!("渲染错误: {}", e);
+                    }
+                }
+                _ => {}
+            }
+            
+            if !self.running {
+                window_target.exit();
+            }
+        });
         
         Ok(())
     }
@@ -139,59 +192,4 @@ impl Engine {
     }
 }
 
-impl ApplicationHandler for Engine {
-    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        let window_attributes = WindowAttributes::default()
-            .with_title(&self.config.window.title)
-            .with_inner_size(winit::dpi::LogicalSize::new(
-                self.config.window.width,
-                self.config.window.height,
-            ))
-            .with_resizable(self.config.window.resizable);
-
-        let window = event_loop.create_window(window_attributes)
-            .expect("创建窗口失败");
-        
-        let window = Arc::new(window);
-        
-        // 初始化渲染系统
-        match pollster::block_on(RenderSystem::new(window.clone(), &self.config.render)) {
-            Ok(render_system) => {
-                self.render_system = Some(render_system);
-                log::info!("渲染系统初始化成功");
-            }
-            Err(e) => {
-                log::error!("渲染系统初始化失败: {}", e);
-                return;
-            }
-        }
-        
-        self.window = Some(window);
-        log::info!("引擎窗口创建成功");
-    }
-
-    fn window_event(
-        &mut self,
-        event_loop: &ActiveEventLoop,
-        window_id: WindowId,
-        event: WindowEvent,
-    ) {
-        self.handle_window_event(window_id, event);
-        
-        if !self.running {
-            event_loop.exit();
-        }
-    }
-
-    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
-        // 主更新循环
-        if let Err(e) = self.update() {
-            log::error!("引擎更新错误: {}", e);
-        }
-        
-        // 请求重绘
-        if let Some(window) = &self.window {
-            window.request_redraw();
-        }
-    }
-}
+// ApplicationHandler implementation removed - using traditional winit event loop

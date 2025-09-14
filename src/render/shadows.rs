@@ -1,7 +1,8 @@
 //! 阴影渲染系统
 
-use crate::math::{Vec3, Vec4, Mat4, Quat};
+use crate::math::{Vec2, Vec3, Vec4, Mat4, Quat};
 use crate::render::{Camera, Light, LightType, Mesh, Material};
+use crate::ecs::Transform;
 use wgpu::*;
 use std::collections::HashMap;
 
@@ -145,23 +146,23 @@ impl ShadowMap {
     }
 
     /// 更新光源矩阵
-    pub fn update_light_matrices(&mut self, light: &Light, scene_bounds: &crate::math::bounds::AABB) {
+    pub fn update_light_matrices(&mut self, light: &Light, transform: &Transform, scene_bounds: &crate::math::bounds::AABB) {
         match light.light_type {
             LightType::Directional => {
-                self.update_directional_light_matrices(light, scene_bounds);
+                self.update_directional_light_matrices(light, transform, scene_bounds);
             }
             LightType::Point => {
-                self.update_point_light_matrices(light);
+                self.update_point_light_matrices(light, transform);
             }
             LightType::Spot => {
-                self.update_spot_light_matrices(light);
+                self.update_spot_light_matrices(light, transform);
             }
         }
     }
 
     /// 更新方向光矩阵
-    fn update_directional_light_matrices(&mut self, light: &Light, scene_bounds: &crate::math::bounds::AABB) {
-        let light_direction = light.direction.normalize();
+    fn update_directional_light_matrices(&mut self, light: &Light, transform: &Transform, scene_bounds: &crate::math::bounds::AABB) {
+        let light_direction = transform.forward().normalize();
         let light_position = scene_bounds.center() - light_direction * scene_bounds.size().length();
 
         // 构建光源视图矩阵
@@ -181,12 +182,12 @@ impl ShadowMap {
     }
 
     /// 更新点光源矩阵
-    fn update_point_light_matrices(&mut self, light: &Light) {
+    fn update_point_light_matrices(&mut self, light: &Light, transform: &Transform) {
         // 点光源需要6个面的阴影贴图（立方体贴图）
         // 这里简化为单一方向
         self.light_view_matrix = Mat4::look_at_rh(
-            light.position,
-            light.position + Vec3::new(0.0, 0.0, 1.0),
+            transform.position,
+            transform.position + Vec3::new(0.0, 0.0, 1.0),
             Vec3::Y,
         );
 
@@ -199,12 +200,12 @@ impl ShadowMap {
     }
 
     /// 更新聚光灯矩阵
-    fn update_spot_light_matrices(&mut self, light: &Light) {
-        let light_direction = light.direction.normalize();
+    fn update_spot_light_matrices(&mut self, light: &Light, transform: &Transform) {
+        let light_direction = transform.forward().normalize();
         
         self.light_view_matrix = Mat4::look_at_rh(
-            light.position,
-            light.position + light_direction,
+            transform.position,
+            transform.position + light_direction,
             Vec3::Y,
         );
 
@@ -249,6 +250,7 @@ impl CascadedShadowMap {
         &mut self,
         camera: &Camera,
         light: &Light,
+        light_transform: &Transform,
         config: &ShadowConfig,
         scene_bounds: &crate::math::bounds::AABB,
     ) {
@@ -262,30 +264,31 @@ impl CascadedShadowMap {
             }
         }
 
-        // 更新每个级联的矩阵
-        for (i, cascade) in self.cascades.iter_mut().enumerate() {
-            if i >= config.cascade_splits.len() {
-                break;
-            }
-
+        // 预先计算所有级联的数据，避免借用冲突
+        let mut cascade_data = Vec::new();
+        for i in 0..config.cascade_splits.len().min(self.cascades.len()) {
             let near = if i == 0 { camera_near } else { self.cascade_distances[i - 1] };
             let far = self.cascade_distances[i];
 
             // 计算该级联的视锥体
-            let frustum_corners = self.calculate_frustum_corners(camera, near, far);
+            let frustum_corners = Self::calculate_frustum_corners_static(camera, near, far);
             
             // 计算包围盒
-            let frustum_bounds = self.calculate_frustum_bounds(&frustum_corners);
+            let frustum_bounds = Self::calculate_frustum_bounds_static(&frustum_corners);
             
-            // 更新级联的光源矩阵
-            cascade.update_directional_light_matrices(light, &frustum_bounds);
-            self.cascade_matrices[i] = cascade.get_light_space_matrix();
+            cascade_data.push((i, frustum_bounds));
+        }
+
+        // 更新级联矩阵
+        for (i, frustum_bounds) in cascade_data {
+            self.cascades[i].update_directional_light_matrices(light, light_transform, &frustum_bounds);
+            self.cascade_matrices[i] = self.cascades[i].get_light_space_matrix();
         }
     }
 
-    /// 计算视锥体角点
-    fn calculate_frustum_corners(&self, camera: &Camera, near: f32, far: f32) -> [Vec3; 8] {
-        let inv_view_proj = (camera.get_projection_matrix() * camera.get_view_matrix()).inverse();
+    /// 计算视锥体角点（静态版本）
+    fn calculate_frustum_corners_static(camera: &Camera, near: f32, far: f32) -> [Vec3; 8] {
+        let inv_view_proj = (camera.projection_matrix() * camera.view_matrix()).inverse();
         
         // NDC空间中的视锥体角点
         let ndc_corners = [
@@ -314,6 +317,10 @@ impl CascadedShadowMap {
 
     /// 计算视锥体包围盒
     fn calculate_frustum_bounds(&self, corners: &[Vec3; 8]) -> crate::math::bounds::AABB {
+        Self::calculate_frustum_bounds_static(corners)
+    }
+
+    fn calculate_frustum_bounds_static(corners: &[Vec3; 8]) -> crate::math::bounds::AABB {
         let mut min = corners[0];
         let mut max = corners[0];
 
@@ -419,6 +426,7 @@ impl ShadowRenderer {
         encoder: &mut CommandEncoder,
         light_id: u32,
         light: &Light,
+        light_transform: &Transform,
         meshes: &[(&Mesh, &Mat4)], // (网格, 世界变换矩阵)
         scene_bounds: &crate::math::bounds::AABB,
     ) {
@@ -432,7 +440,7 @@ impl ShadowRenderer {
         }
 
         let shadow_map = self.shadow_maps.get_mut(&light_id).unwrap();
-        shadow_map.update_light_matrices(light, scene_bounds);
+        shadow_map.update_light_matrices(light, light_transform, scene_bounds);
 
         // 创建渲染通道
         let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
@@ -452,11 +460,12 @@ impl ShadowRenderer {
 
         // 更新uniform数据
         let uniforms = ShadowUniforms {
-            light_space_matrix: shadow_map.get_light_space_matrix(),
-            light_position: light.position.extend(1.0),
+            light_space_matrix: shadow_map.get_light_space_matrix().to_cols_array_2d(),
+            light_position: light_transform.position.extend(1.0).to_array(),
             shadow_bias: self.config.bias,
             normal_bias: self.config.normal_bias,
             cascade_count: self.config.cascade_count,
+            _padding: 0,
             cascade_distances: [0.0; 4], // 暂时填充，实际使用时会更新
         };
 
@@ -477,6 +486,7 @@ impl ShadowRenderer {
         encoder: &mut CommandEncoder,
         camera: &Camera,
         light: &Light,
+        light_transform: &Transform,
         meshes: &[(&Mesh, &Mat4)],
         scene_bounds: &crate::math::bounds::AABB,
     ) {
@@ -485,7 +495,7 @@ impl ShadowRenderer {
         }
 
         let csm = self.cascaded_shadow_map.as_mut().unwrap();
-        csm.update_cascades(camera, light, &self.config, scene_bounds);
+        csm.update_cascades(camera, light, light_transform, &self.config, scene_bounds);
 
         // 渲染每个级联
         for (i, cascade) in csm.cascades.iter().enumerate() {
@@ -506,11 +516,12 @@ impl ShadowRenderer {
 
             // 更新该级联的uniform数据
             let uniforms = ShadowUniforms {
-                light_space_matrix: csm.cascade_matrices[i],
-                light_position: light.position.extend(1.0),
+                light_space_matrix: csm.cascade_matrices[i].to_cols_array_2d(),
+                light_position: light_transform.position.extend(1.0).to_array(),
                 shadow_bias: self.config.bias,
                 normal_bias: self.config.normal_bias,
                 cascade_count: self.config.cascade_count,
+                _padding: 0,
                 cascade_distances: [
                     csm.cascade_distances.get(0).copied().unwrap_or(0.0),
                     csm.cascade_distances.get(1).copied().unwrap_or(0.0),
@@ -570,16 +581,21 @@ impl ShadowRenderer {
 
 /// 阴影uniform数据
 #[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Debug, Copy, Clone)]
+#[repr(C)]
 pub struct ShadowUniforms {
-    pub light_space_matrix: Mat4,
-    pub light_position: Vec4,
+    pub light_space_matrix: [[f32; 4]; 4], // Mat4 as array
+    pub light_position: [f32; 4],          // Vec4 as array
     pub shadow_bias: f32,
     pub normal_bias: f32,
     pub cascade_count: u32,
     pub _padding: u32,
     pub cascade_distances: [f32; 4],
 }
+
+// Manual implementation of bytemuck traits for ShadowUniforms
+unsafe impl bytemuck::Pod for ShadowUniforms {}
+unsafe impl bytemuck::Zeroable for ShadowUniforms {}
 
 /// 阴影计算工具
 pub struct ShadowUtils;

@@ -5,8 +5,8 @@ pub mod emitter;
 pub mod systems;
 pub mod effects;
 
-pub use particle::*;
-pub use emitter::*;
+pub use particle::{Particle, ParticleState};
+pub use emitter::{ParticleEmitter, EmitterId, EmitterConfig, EmissionShape, BlendMode as EmitterBlendMode, SizeOverLifetime, VelocityOverLifetime, ColorOverLifetime, SimulationSpace};
 pub use systems::*;
 pub use effects::*;
 
@@ -199,7 +199,7 @@ impl ParticlePresets {
             gravity: Vec3::new(0.0, 1.0, 0.0),
             shape: EmissionShape::Circle { radius: 0.5 },
             texture_path: Some("assets/textures/fire_particle.png".to_string()),
-            blend_mode: BlendMode::Additive,
+            blend_mode: EmitterBlendMode::Additive,
             size_over_lifetime: Some(SizeOverLifetime::new(vec![
                 (0.0, 0.5),
                 (0.3, 1.0),
@@ -235,7 +235,7 @@ impl ParticlePresets {
             gravity: Vec3::new(0.0, -0.5, 0.0),
             shape: EmissionShape::Circle { radius: 0.3 },
             texture_path: Some("assets/textures/smoke_particle.png".to_string()),
-            blend_mode: BlendMode::Alpha,
+            blend_mode: EmitterBlendMode::Alpha,
             size_over_lifetime: Some(SizeOverLifetime::new(vec![
                 (0.0, 0.3),
                 (0.5, 1.0),
@@ -268,7 +268,7 @@ impl ParticlePresets {
             gravity: Vec3::new(0.0, -2.0, 0.0),
             shape: EmissionShape::Sphere { radius: 0.1 },
             texture_path: Some("assets/textures/spark_particle.png".to_string()),
-            blend_mode: BlendMode::Additive,
+            blend_mode: EmitterBlendMode::Additive,
             size_over_lifetime: Some(SizeOverLifetime::new(vec![
                 (0.0, 1.0),
                 (1.0, 0.0),
@@ -306,7 +306,7 @@ impl ParticlePresets {
                 size: Vec3::new(20.0, 1.0, 20.0) 
             },
             texture_path: Some("assets/textures/snowflake_particle.png".to_string()),
-            blend_mode: BlendMode::Alpha,
+            blend_mode: EmitterBlendMode::Alpha,
             size_over_lifetime: None,
             velocity_over_lifetime: Some(VelocityOverLifetime::new(vec![
                 (0.0, Vec3::new(0.0, -1.0, 0.0)),
@@ -334,7 +334,7 @@ impl ParticlePresets {
             gravity: Vec3::ZERO,
             shape: EmissionShape::Circle { radius: 1.0 },
             texture_path: Some("assets/textures/magic_particle.png".to_string()),
-            blend_mode: BlendMode::Additive,
+            blend_mode: EmitterBlendMode::Additive,
             size_over_lifetime: Some(SizeOverLifetime::new(vec![
                 (0.0, 0.2),
                 (0.5, 1.0),
@@ -372,7 +372,7 @@ impl ParticlePresets {
                 size: Vec3::new(50.0, 1.0, 50.0) 
             },
             texture_path: Some("assets/textures/rain_particle.png".to_string()),
-            blend_mode: BlendMode::Alpha,
+            blend_mode: EmitterBlendMode::Alpha,
             size_over_lifetime: None,
             velocity_over_lifetime: None,
             color_over_lifetime: None,
@@ -397,7 +397,7 @@ impl ParticlePresets {
             gravity: Vec3::new(0.0, -0.5, 0.0),
             shape: EmissionShape::Circle { radius: 0.5 },
             texture_path: Some("assets/textures/healing_particle.png".to_string()),
-            blend_mode: BlendMode::Additive,
+            blend_mode: EmitterBlendMode::Additive,
             size_over_lifetime: Some(SizeOverLifetime::new(vec![
                 (0.0, 0.5),
                 (0.3, 1.0),

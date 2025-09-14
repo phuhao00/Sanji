@@ -268,7 +268,8 @@ impl PhysicsWorld {
 
     /// 解决碰撞
     fn resolve_collisions(&mut self, dt: f32) {
-        for collision in &self.collision_events {
+        let collision_events = self.collision_events.clone();
+        for collision in collision_events.iter() {
             self.resolve_collision(collision, dt);
         }
     }

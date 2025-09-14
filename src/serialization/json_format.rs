@@ -28,7 +28,7 @@ impl Default for JsonSerializer {
 }
 
 impl Serializer for JsonSerializer {
-    type Error = Box<dyn std::error::Error + Send + Sync>;
+    type Error = serde_json::Error;
 
     fn serialize<T: Serialize>(&self, data: &T, context: &SerializationContext) -> Result<Vec<u8>, Self::Error> {
         let result = if context.pretty_print {
@@ -100,7 +100,7 @@ pub mod json_utils {
     }
 
     /// 提取JSON对象中的字段
-    pub fn extract_field(value: &Value, path: &str) -> Option<&Value> {
+    pub fn extract_field<'a>(value: &'a Value, path: &str) -> Option<&'a Value> {
         let parts: Vec<&str> = path.split('.').collect();
         let mut current = value;
 
@@ -136,7 +136,11 @@ pub mod json_utils {
         for part in &parts[..parts.len() - 1] {
             match current {
                 Value::Object(map) => {
-                    current = map.get_mut(part).unwrap_or(&mut Value::Null);
+                    let part_key = part.to_string();
+                    if !map.contains_key(&part_key) {
+                        map.insert(part_key.clone(), Value::Object(serde_json::Map::new()));
+                    }
+                    current = map.get_mut(&part_key).unwrap();
                     if current.is_null() {
                         *current = Value::Object(serde_json::Map::new());
                     }

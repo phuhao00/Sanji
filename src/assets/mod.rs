@@ -6,6 +6,6 @@ pub mod asset_cache;
 pub mod asset_handle;
 
 pub use asset_manager::*;
-pub use asset_loader::*;
+pub use asset_loader::{AssetLoader, AssetLoaderRegistry, ErasedAssetLoader};
 pub use asset_cache::*;
 pub use asset_handle::*;

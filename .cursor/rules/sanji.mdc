@@ -1,5 +1,224 @@
 ---
-description:
-globs:
+description: Sanji游戏引擎 - Rust游戏开发最佳实践规则
+globs: 
+  - "**/*.rs"
+  - "**/*.toml" 
+  - "**/*.md"
+  - "**/*.wgsl"
 alwaysApply: true
 ---
+
+# Sanji游戏引擎开发规范
+
+## 🎯 项目概述
+Sanji是一个现代化的Rust游戏引擎，提供完整的游戏开发工具链。本项目使用ECS架构，支持跨平台渲染、物理引擎、音频系统、动画系统等核心功能。
+
+## 📝 代码风格与规范
+
+### Rust代码规范
+- **缩进**：使用4个空格，不使用制表符
+- **行长度**：限制为100字符
+- **命名约定**：
+  - 变量和函数：`snake_case`
+  - 类型名：`PascalCase` 
+  - 常量：`SCREAMING_SNAKE_CASE`
+  - 模块名：`snake_case`
+- **导入顺序**：标准库 → 第三方crate → 本地模块
+- **错误处理**：使用`anyhow::Result<T>`作为`EngineResult<T>`，thiserror定义自定义错误
+
+### 文档规范
+- **语言**：所有注释和文档使用中文编写
+- **文档注释**：所有public API必须有详细的文档注释
+- **格式要求**：
+```rust
+/// 功能简短描述
+/// 
+/// 详细描述功能的作用和用途
+/// 
+/// # 参数
+/// 
+/// * `param` - 参数描述
+/// 
+/// # 返回
+/// 
+/// 返回值描述
+/// 
+/// # 示例
+/// 
+/// ```rust
+/// let result = function_name(param);
+/// ```
+/// 
+/// # 错误
+/// 
+/// 可能出现的错误情况描述
+```
+
+## 🏗️ 架构规范
+
+### ECS系统规范
+- **组件（Components）**：
+  - 继承`Component` trait
+  - 使用`#[derive(Component)]`
+  - 实现`Serialize`, `Deserialize`用于场景保存
+  - 选择合适的存储类型：`VecStorage`、`DenseVecStorage`、`HashMapStorage`
+  
+- **系统（Systems）**：
+  - 实现`System` trait
+  - 明确声明读写权限
+  - 避免系统间的数据竞争
+
+### 模块组织规范
+- **核心模块**：`src/core/` - 引擎核心功能
+- **渲染系统**：`src/render/` - 图形渲染相关
+- **ECS**：`src/ecs/` - 实体组件系统
+- **资源管理**：`src/assets/` - 资源加载和缓存
+- **场景系统**：`src/scene/` - 场景管理
+- **数学库**：`src/math/` - 数学工具和算法
+- **物理引擎**：`src/physics/` - 物理模拟
+- **音频系统**：`src/audio/` - 3D空间音频
+- **动画系统**：`src/animation/` - 关键帧和骨骼动画
+- **UI系统**：`src/ui/` - 用户界面
+- **粒子系统**：`src/particles/` - 特效系统
+- **性能分析**：`src/performance/` - 性能监控和优化
+- **序列化**：`src/serialization/` - 数据序列化
+
+### 渲染系统规范
+- **基于wgpu**：使用现代图形API抽象
+- **PBR渲染**：物理基础渲染管线
+- **材质系统**：支持标准PBR材质属性
+- **着色器**：使用WGSL编写，放置在`src/render/shaders/`
+- **纹理管理**：统一的纹理加载和缓存
+
+## 🔧 开发工具和依赖
+
+### 主要依赖
+- **图形渲染**：wgpu (跨平台图形)
+- **数学库**：glam (SIMD优化的数学库)
+- **ECS框架**：specs (高性能ECS)
+- **序列化**：serde (数据序列化)
+- **错误处理**：anyhow, thiserror
+- **日志系统**：log, env_logger
+- **异步运行时**：tokio
+- **物理引擎**：rapier3d (可选)
+- **音频处理**：rodio (可选)
+
+### 开发工具
+- **格式化**：始终使用`cargo fmt`
+- **代码检查**：使用`cargo clippy`进行代码质量检查
+- **测试**：`cargo test`运行所有测试
+- **示例**：提供`simple_demo`、`basic_demo`、`comprehensive_demo`
+
+## ⚡ 性能优化指南
+
+### 内存管理
+- 避免不必要的内存分配
+- 使用对象池复用频繁创建的对象
+- 合理使用`Vec`的`capacity`预分配内存
+- 考虑使用`Box`、`Rc`、`Arc`管理大型数据
+
+### 渲染优化
+- 批量渲染相同材质的物体
+- 使用实例化渲染减少draw call
+- 实现视锥体剔除减少不可见物体渲染
+- GPU端的计算尽可能避免CPU-GPU同步
+
+### 多线程考虑
+- ECS系统设计支持并行执行
+- 渲染系统与游戏逻辑分离
+- 使用`Send`和`Sync`确保线程安全
+
+## 🧪 测试规范
+
+### 单元测试
+- 为所有public API编写单元测试
+- 测试正常情况和边界情况
+- 使用描述性测试名称：`test_function_name_with_condition`
+
+### 集成测试
+- 在`tests/`目录创建集成测试
+- 测试模块间交互
+- 测试完整的游戏场景流程
+
+### 性能测试
+- 使用`cargo bench`进行基准测试
+- 监控关键路径的性能指标
+- 定期进行性能回归测试
+
+## 🎮 游戏开发最佳实践
+
+### 场景管理
+- 使用场景图管理游戏对象层级关系
+- 支持场景序列化和反序列化
+- 实现场景热重载加速开发
+
+### 资源管理
+- 异步资源加载避免阻塞主线程
+- 实现资源引用计数和生命周期管理
+- 支持多种资源格式（obj, gltf, png, jpg等）
+
+### 输入处理
+- 支持键盘、鼠标、手柄输入
+- 实现输入映射系统
+- 支持热键配置
+
+### 调试工具
+- 集成性能分析器
+- 提供内存使用监控
+- 实现可视化调试界面
+
+## 📚 示例和文档
+
+### 代码示例
+每个主要功能都应提供简洁的使用示例：
+
+```rust
+// 创建引擎实例
+let mut engine = Engine::new(EngineConfig::default())?;
+
+// 创建游戏实体
+let entity = engine.world.create_entity()
+    .with(Transform::default())
+    .with(MeshRenderer::new("cube", "default"))
+    .build();
+
+// 运行游戏循环
+engine.run(|engine, delta_time| {
+    // 游戏逻辑更新
+    Ok(())
+})?;
+```
+
+### API文档
+- 使用`cargo doc`生成完整API文档
+- 每个模块包含概述和使用说明
+- 提供从入门到高级的教程文档
+
+## 🔄 版本管理
+
+### 语义化版本
+- 遵循semver规范：`MAJOR.MINOR.PATCH`
+- 破坏性更改增加MAJOR版本
+- 新功能增加MINOR版本
+- Bug修复增加PATCH版本
+
+### 变更日志
+- 维护详细的CHANGELOG.md
+- 记录每个版本的新功能、修复和破坏性更改
+- 提供迁移指南
+
+## 🚀 部署和发布
+
+### 特性标志
+- 使用Cargo features控制可选功能
+- `default = ["physics", "audio"]`
+- 支持最小化构建减少依赖
+
+### 平台支持
+- Windows、macOS、Linux跨平台支持
+- 考虑WebAssembly目标支持
+- 移动平台适配（iOS、Android）
+
+---
+
+遵循这些规范将确保Sanji引擎的代码质量、性能和可维护性。所有贡献者都应当熟悉并遵循这些最佳实践。

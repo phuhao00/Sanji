@@ -103,7 +103,7 @@ impl PerformanceMonitor {
         Self {
             profiler: Profiler::new(),
             memory_tracker: MemoryTracker::new(),
-            frame_analyzer: FrameAnalyzer::new(),
+            frame_analyzer: FrameAnalyzer::new(60.0),
             metrics_collector: MetricsCollector::new(),
             sample_interval: Duration::from_millis(16), // ~60 FPS
             last_sample_time: Instant::now(),
@@ -520,13 +520,7 @@ pub fn get_global_monitor() -> &'static mut PerformanceMonitor {
     }
 }
 
-/// 性能分析宏
-#[macro_export]
-macro_rules! profile_scope {
-    ($name:expr) => {
-        let _guard = $crate::performance::get_global_monitor().begin_section($name);
-    };
-}
+/// 性能分析宏（使用 logging 模块中的定义）
 
 #[macro_export]
 macro_rules! profile_function {

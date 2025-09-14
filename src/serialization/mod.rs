@@ -6,6 +6,17 @@ pub mod component_serializer;
 pub mod binary_format;
 pub mod json_format;
 
+/// 序列化器通用trait
+pub trait Serializer {
+    type Error: std::error::Error + Send + Sync + 'static;
+
+    /// 序列化数据
+    fn serialize<T: Serialize>(&self, data: &T, context: &SerializationContext) -> Result<Vec<u8>, Self::Error>;
+    
+    /// 反序列化数据
+    fn deserialize<T: for<'de> Deserialize<'de>>(&self, data: &[u8], context: &SerializationContext) -> Result<T, Self::Error>;
+}
+
 pub use scene_serializer::*;
 pub use asset_serializer::*;
 pub use component_serializer::*;
@@ -18,7 +29,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 /// 序列化格式
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SerializationFormat {
     Json,           // JSON格式 - 人类可读
     Binary,         // 二进制格式 - 高效
@@ -145,20 +156,31 @@ impl<T> SerializedData<T> {
     }
 }
 
-/// 序列化器接口
-pub trait Serializer {
-    type Error: std::error::Error + Send + Sync + 'static;
+/// 序列化器枚举（避免trait对象问题）
+pub enum SerializerInstance {
+    Json(JsonSerializer),
+    Binary(BinarySerializer),
+}
 
-    /// 序列化数据
-    fn serialize<T: Serialize>(&self, data: &T, context: &SerializationContext) -> Result<Vec<u8>, Self::Error>;
+impl SerializerInstance {
+    pub fn serialize<T: Serialize>(&self, data: &T, context: &SerializationContext) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
+        match self {
+            SerializerInstance::Json(s) => s.serialize(data, context).map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>),
+            SerializerInstance::Binary(s) => s.serialize(data, context).map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>),
+        }
+    }
     
-    /// 反序列化数据
-    fn deserialize<T: for<'de> Deserialize<'de>>(&self, data: &[u8], context: &SerializationContext) -> Result<T, Self::Error>;
+    pub fn deserialize<T: for<'de> Deserialize<'de>>(&self, data: &[u8], context: &SerializationContext) -> Result<T, Box<dyn std::error::Error + Send + Sync>> {
+        match self {
+            SerializerInstance::Json(s) => s.deserialize(data, context).map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>),
+            SerializerInstance::Binary(s) => s.deserialize(data, context).map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>),
+        }
+    }
 }
 
 /// 序列化管理器
 pub struct SerializationManager {
-    serializers: HashMap<SerializationFormat, Box<dyn Serializer<Error = Box<dyn std::error::Error + Send + Sync>>>>,
+    serializers: HashMap<SerializationFormat, SerializerInstance>,
     default_context: SerializationContext,
 }
 
@@ -170,14 +192,14 @@ impl SerializationManager {
         };
 
         // 注册默认序列化器
-        manager.register_serializer(SerializationFormat::Json, Box::new(JsonSerializer::new()));
-        manager.register_serializer(SerializationFormat::Binary, Box::new(BinarySerializer::new()));
-
+        manager.register_serializer(SerializationFormat::Json, SerializerInstance::Json(JsonSerializer::new()));
+        manager.register_serializer(SerializationFormat::Binary, SerializerInstance::Binary(BinarySerializer::new()));
+        
         manager
     }
 
     /// 注册序列化器
-    pub fn register_serializer(&mut self, format: SerializationFormat, serializer: Box<dyn Serializer<Error = Box<dyn std::error::Error + Send + Sync>>>) {
+    pub fn register_serializer(&mut self, format: SerializationFormat, serializer: SerializerInstance) {
         self.serializers.insert(format, serializer);
     }
 

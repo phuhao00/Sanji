@@ -248,7 +248,7 @@ pub struct AssetLoaderRegistry {
 }
 
 /// 类型擦除的资源加载器
-trait ErasedAssetLoader: Send + Sync {
+pub trait ErasedAssetLoader: Send + Sync {
     fn extensions(&self) -> &[&str];
     fn load(&self, path: &Path) -> EngineResult<Arc<dyn Any + Send + Sync>>;
     fn type_name(&self) -> &'static str;
@@ -312,6 +312,7 @@ impl AssetLoaderRegistry {
         self.loaders
             .iter()
             .flat_map(|loader| loader.extensions())
+            .cloned()
             .collect()
     }
 }

@@ -6,15 +6,14 @@ use glam::{Vec3, Quat};
 
 /// 实体构建器辅助类
 pub struct EntityBuilder<'a> {
-    builder: specs::EntityBuilder,
-    world: &'a mut World,
+    builder: specs::EntityBuilder<'a>,
 }
 
 impl<'a> EntityBuilder<'a> {
     /// 创建新的实体构建器
     pub fn new(world: &'a mut World) -> Self {
         let builder = world.create_entity();
-        Self { builder, world }
+        Self { builder }
     }
 
     /// 添加变换组件

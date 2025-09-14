@@ -1,7 +1,7 @@
 //! 资源管理器
 
 use crate::{EngineResult, EngineError};
-use crate::assets::{AssetHandle, AssetLoader, AssetCache, AssetHandleManager, CacheStrategy};
+use crate::assets::{AssetHandle, AssetLoader, AssetCache, AssetHandleManager, CacheStrategy, ErasedAssetLoader};
 use crate::render::{Texture, Mesh, Material, Shader};
 use crate::events::{EventSystem, AssetLoadedEvent, AssetLoadFailedEvent};
 
@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 /// 资源管理器 - 统一管理所有游戏资源
 pub struct AssetManager {
     /// 资源加载器
-    loaders: HashMap<String, Box<dyn AssetLoader>>,
+    loaders: HashMap<String, Box<dyn ErasedAssetLoader>>,
     /// 资源缓存
     cache: AssetCache,
     /// 句柄管理器
@@ -59,12 +59,14 @@ impl AssetManager {
     }
 
     /// 注册资源加载器
-    pub fn register_loader<L: AssetLoader + 'static>(&mut self, extension: impl Into<String>, loader: L) {
+    pub fn register_loader<L: AssetLoader + ErasedAssetLoader + 'static>(&mut self, extension: impl Into<String>, loader: L) {
         self.loaders.insert(extension.into(), Box::new(loader));
     }
 
     /// 注册默认加载器
     fn register_default_loaders(&mut self) -> EngineResult<()> {
+        // TODO: Implement ErasedAssetLoader for these types first
+        /*
         // 注册纹理加载器
         self.register_loader("png", TextureLoader);
         self.register_loader("jpg", TextureLoader);
@@ -80,6 +82,7 @@ impl AssetManager {
         
         // 注册材质加载器
         self.register_loader("json", MaterialLoader);
+        */
 
         Ok(())
     }
@@ -135,7 +138,7 @@ impl AssetManager {
                         std::any::type_name::<T>(), 
                         "unknown");
                     self.emit_asset_load_failed(&path_str, &error);
-                    Err(EngineError::AssetError(error))
+                    Err(EngineError::AssetError(error).into())
                 }
             }
             Err(e) => {
@@ -236,7 +239,7 @@ impl AssetManager {
                 "json" => {
                     self.load::<Material>(path).map(|_| ())
                 }
-                _ => Err(EngineError::AssetError(format!("未知的文件类型: {}", extension)))
+                _ => Err(EngineError::AssetError(format!("未知的文件类型: {}", extension)).into())
             };
             
             results.push(result);
@@ -281,9 +284,11 @@ impl AssetManager {
 struct TextureLoader;
 
 impl AssetLoader for TextureLoader {
-    fn load(&self, path: &Path) -> EngineResult<Arc<dyn std::any::Any + Send + Sync>> {
+    type Asset = Texture;
+    
+    fn load(&self, path: &Path) -> EngineResult<Self::Asset> {
         let texture = Texture::from_file(path)?;
-        Ok(Arc::new(texture))
+        Ok(texture)
     }
 
     fn extensions(&self) -> &[&str] {
@@ -295,17 +300,19 @@ impl AssetLoader for TextureLoader {
 struct ShaderLoader;
 
 impl AssetLoader for ShaderLoader {
-    fn load(&self, path: &Path) -> EngineResult<Arc<dyn std::any::Any + Send + Sync>> {
+    type Asset = Shader;
+    
+    fn load(&self, path: &Path) -> EngineResult<Self::Asset> {
         let source = std::fs::read_to_string(path)
             .map_err(|e| EngineError::IoError(e))?;
-            
+
         let name = path.file_stem()
             .and_then(|n| n.to_str())
             .unwrap_or("unknown")
             .to_string();
-            
+
         let shader = Shader::new(name).with_wgsl_source(source);
-        Ok(Arc::new(shader))
+        Ok(shader)
     }
 
     fn extensions(&self) -> &[&str] {
@@ -317,10 +324,12 @@ impl AssetLoader for ShaderLoader {
 struct MeshLoader;
 
 impl AssetLoader for MeshLoader {
-    fn load(&self, path: &Path) -> EngineResult<Arc<dyn std::any::Any + Send + Sync>> {
+    type Asset = Mesh;
+    
+    fn load(&self, path: &Path) -> EngineResult<Self::Asset> {
         // 简化的OBJ加载实现
         let mesh = Mesh::cube(); // 临时返回立方体
-        Ok(Arc::new(mesh))
+        Ok(mesh)
     }
 
     fn extensions(&self) -> &[&str] {
@@ -332,13 +341,15 @@ impl AssetLoader for MeshLoader {
 struct MaterialLoader;
 
 impl AssetLoader for MaterialLoader {
-    fn load(&self, path: &Path) -> EngineResult<Arc<dyn std::any::Any + Send + Sync>> {
+    type Asset = Material;
+    
+    fn load(&self, path: &Path) -> EngineResult<Self::Asset> {
         let content = std::fs::read_to_string(path)
             .map_err(|e| EngineError::IoError(e))?;
-            
+
         // 简化的JSON材质加载
         let material = Material::default();
-        Ok(Arc::new(material))
+        Ok(material)
     }
 
     fn extensions(&self) -> &[&str] {

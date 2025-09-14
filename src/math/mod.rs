@@ -21,7 +21,6 @@ pub use glam::{
     UVec2, UVec3, UVec4,
     Mat2, Mat3, Mat4,
     Quat,
-    f32::consts as constants,
 };
 
 /// 数学常量

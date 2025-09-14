@@ -202,8 +202,13 @@ impl MouseState {
 
     /// 更新按键持续时间
     pub fn update_button_durations(&mut self, delta_time: f32) {
+        let pressed_buttons: Vec<MouseButton> = self.button_durations.keys()
+            .filter(|&&button| self.is_button_pressed(button))
+            .copied()
+            .collect();
+        
         for (&button, duration) in self.button_durations.iter_mut() {
-            if self.is_button_pressed(button) {
+            if pressed_buttons.contains(&button) {
                 *duration += delta_time;
             }
         }

@@ -101,7 +101,7 @@ impl SceneManager {
         let name = name.into();
         
         if !self.scenes.contains_key(&name) {
-            return Err(EngineError::AssetError(format!("场景不存在: {}", name)));
+            return Err(EngineError::AssetError(format!("场景不存在: {}", name)).into());
         }
 
         // 设置下一个场景和切换标志
@@ -116,7 +116,7 @@ impl SceneManager {
         let name = name.into();
         
         if !self.scenes.contains_key(&name) {
-            return Err(EngineError::AssetError(format!("场景不存在: {}", name)));
+            return Err(EngineError::AssetError(format!("场景不存在: {}", name)).into());
         }
 
         // 停用当前场景
@@ -195,7 +195,7 @@ impl SceneManager {
             // 比如预加载资源、初始化对象等
             log::info!("预载场景: {}", name);
         } else {
-            return Err(EngineError::AssetError(format!("场景不存在: {}", name)));
+            return Err(EngineError::AssetError(format!("场景不存在: {}", name)).into());
         }
         Ok(())
     }
@@ -301,11 +301,11 @@ impl SceneManager {
         let new_name = new_name.into();
         
         if !self.scenes.contains_key(source_name) {
-            return Err(EngineError::AssetError(format!("源场景不存在: {}", source_name)));
+            return Err(EngineError::AssetError(format!("源场景不存在: {}", source_name)).into());
         }
         
         if self.scenes.contains_key(&new_name) {
-            return Err(EngineError::AssetError(format!("目标场景已存在: {}", new_name)));
+            return Err(EngineError::AssetError(format!("目标场景已存在: {}", new_name)).into());
         }
         
         // 简化的场景复制 - 创建新的空场景
@@ -335,7 +335,7 @@ impl SceneManager {
             
             Ok(())
         } else {
-            Err(EngineError::AssetError(format!("场景不存在: {}", old_name)))
+            Err(EngineError::AssetError(format!("场景不存在: {}", old_name)).into())
         }
     }
 

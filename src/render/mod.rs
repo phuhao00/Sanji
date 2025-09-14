@@ -17,3 +17,6 @@ pub use material::*;
 pub use camera::*;
 pub use shadows::*;
 pub use post_processing::*;
+
+// 重新导出组件中的Light相关类型，以便向后兼容
+pub use crate::ecs::{Light, LightType};

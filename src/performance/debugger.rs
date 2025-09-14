@@ -24,7 +24,7 @@ pub struct DebugOverlay {
 }
 
 /// 调试面板
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct DebugPanel {
     pub id: String,
     pub title: String,
@@ -37,7 +37,7 @@ pub struct DebugPanel {
 }
 
 /// 面板内容
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub enum PanelContent {
     Text(String),
     Metrics(HashMap<String, f64>),
@@ -109,7 +109,7 @@ pub struct TreeNode {
 }
 
 /// 面板位置
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct PanelPosition {
     pub x: f32,
     pub y: f32,
@@ -117,7 +117,7 @@ pub struct PanelPosition {
 }
 
 /// 锚点
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub enum AnchorPoint {
     TopLeft,
     TopRight,
@@ -127,7 +127,7 @@ pub enum AnchorPoint {
 }
 
 /// 面板大小
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct PanelSize {
     pub width: f32,
     pub height: f32,
@@ -547,7 +547,7 @@ impl DebugConsole {
 
     /// 注册默认命令
     fn register_default_commands(&mut self) {
-        self.command_handler.register("help", Box::new(|_| {
+        self.command_handler.register("help", Box::new(|_: &[String]| -> String {
             "Available commands:\n\
              - help: Show this help\n\
              - clear: Clear console\n\
@@ -557,11 +557,11 @@ impl DebugConsole {
              - reload: Reload resources".to_string()
         }));
 
-        self.command_handler.register("clear", Box::new(|_| {
+        self.command_handler.register("clear", Box::new(|_: &[String]| -> String {
             "Console cleared".to_string()
         }));
 
-        self.command_handler.register("fps", Box::new(|_| {
+        self.command_handler.register("fps", Box::new(|_: &[String]| -> String {
             // TODO: 获取实际FPS
             "Current FPS: 60.0".to_string()
         }));

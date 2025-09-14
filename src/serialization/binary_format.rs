@@ -2,6 +2,7 @@
 
 use super::{Serializer, SerializationContext};
 use serde::{Deserialize, Serialize};
+use bincode::Options;
 
 /// 二进制序列化器
 pub struct BinarySerializer {
@@ -28,7 +29,7 @@ impl Default for BinarySerializer {
 }
 
 impl Serializer for BinarySerializer {
-    type Error = Box<dyn std::error::Error + Send + Sync>;
+    type Error = bincode::Error;
 
     fn serialize<T: Serialize>(&self, data: &T, _context: &SerializationContext) -> Result<Vec<u8>, Self::Error> {
         // 使用bincode进行二进制序列化
@@ -56,6 +57,16 @@ impl Serializer for BinarySerializer {
         };
         
         Ok(result)
+    }
+}
+
+impl BinarySerializer {
+    pub fn serialize_data<T: Serialize>(&self, data: &T, context: &SerializationContext) -> Result<Vec<u8>, bincode::Error> {
+        self.serialize(data, context)
+    }
+
+    pub fn deserialize_data<T: for<'de> Deserialize<'de>>(&self, data: &[u8], context: &SerializationContext) -> Result<T, bincode::Error> {
+        self.deserialize(data, context)
     }
 }
 

@@ -3,6 +3,7 @@
 use crate::math::Vec3;
 use serde::{Deserialize, Serialize};
 use specs::{Component, VecStorage};
+use specs_derive::Component;
 
 /// 音频监听器 - 3D音频系统中的"耳朵"
 #[derive(Component, Debug, Clone, Serialize, Deserialize)]
@@ -181,7 +182,7 @@ impl AudioListener {
             -self.forward // OpenGL风格，相机看向-Z方向
         );
         
-        glam::Mat4::from_mat3(rotation).with_translation(self.position)
+        glam::Mat4::from_rotation_translation(glam::Quat::from_mat3(&rotation), self.position)
     }
 
     /// 世界坐标转听音器坐标

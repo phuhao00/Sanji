@@ -2,6 +2,8 @@
 
 use crate::math::Vec3;
 use serde::{Deserialize, Serialize};
+use specs::{Component, VecStorage};
+use specs_derive::Component;
 
 /// 刚体类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -21,7 +23,8 @@ impl Default for RigidBodyType {
 }
 
 /// 物理刚体组件
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, Clone, Serialize, Deserialize)]
+#[storage(VecStorage)]
 pub struct PhysicsRigidBody {
     /// 刚体类型
     pub body_type: RigidBodyType,

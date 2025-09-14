@@ -64,7 +64,7 @@ pub trait Widget {
     fn update(&mut self, delta_time: f32);
     
     /// 渲染组件
-    fn render(&self, renderer: &mut UIRenderer);
+    fn render(&self, renderer: &mut dyn UIRenderer);
     
     /// 点击测试
     fn hit_test(&self, point: Vec2) -> bool {
@@ -206,7 +206,7 @@ impl Widget for TextWidget {
         // 文本组件通常不需要更新逻辑
     }
 
-    fn render(&self, renderer: &mut UIRenderer) {
+    fn render(&self, renderer: &mut dyn UIRenderer) {
         if !self.is_visible() {
             return;
         }
@@ -293,13 +293,13 @@ impl Widget for ButtonWidget {
                     return true;
                 }
             }
-            UIEvent::MouseButtonDown { button: MouseButton::Left, position, .. } => {
+            UIEvent::MouseButtonDown { button: crate::ui::events::MouseButton::Left, position, .. } => {
                 if self.hit_test(*position) {
                     self.set_state(WidgetState::Pressed);
                     return true;
                 }
             }
-            UIEvent::MouseButtonUp { button: MouseButton::Left, position, .. } => {
+            UIEvent::MouseButtonUp { button: crate::ui::events::MouseButton::Left, position, .. } => {
                 if self.state() == WidgetState::Pressed {
                     self.set_state(if self.hit_test(*position) { WidgetState::Hovered } else { WidgetState::Normal });
                     
@@ -319,7 +319,7 @@ impl Widget for ButtonWidget {
         // 按钮可以在这里处理动画状态
     }
 
-    fn render(&self, renderer: &mut UIRenderer) {
+    fn render(&self, renderer: &mut dyn UIRenderer) {
         if !self.is_visible() {
             return;
         }
@@ -463,7 +463,7 @@ impl Widget for InputWidget {
         }
 
         match event {
-            UIEvent::MouseButtonDown { button: MouseButton::Left, position, .. } => {
+            UIEvent::MouseButtonDown { button: crate::ui::events::MouseButton::Left, position, .. } => {
                 if self.hit_test(*position) {
                     self.set_state(WidgetState::Focused);
                     // TODO: 计算光标位置
@@ -476,17 +476,17 @@ impl Widget for InputWidget {
             UIEvent::KeyDown { key, .. } => {
                 if self.state() == WidgetState::Focused {
                     match key {
-                        KeyCode::Backspace => {
+                        crate::ui::events::KeyCode::Backspace => {
                             self.backspace();
                             return true;
                         }
-                        KeyCode::Delete => {
+                        crate::ui::events::KeyCode::Delete => {
                             if self.cursor_position < self.text.len() {
                                 self.text.remove(self.cursor_position);
                             }
                             return true;
                         }
-                        KeyCode::Left => {
+                        crate::ui::events::KeyCode::ArrowLeft => {
                             if self.cursor_position > 0 {
                                 self.cursor_position -= 1;
                                 self.selection_start = self.cursor_position;
@@ -494,7 +494,7 @@ impl Widget for InputWidget {
                             }
                             return true;
                         }
-                        KeyCode::Right => {
+                        crate::ui::events::KeyCode::ArrowRight => {
                             if self.cursor_position < self.text.len() {
                                 self.cursor_position += 1;
                                 self.selection_start = self.cursor_position;
@@ -521,7 +521,7 @@ impl Widget for InputWidget {
         // 输入框可以在这里处理光标闪烁动画
     }
 
-    fn render(&self, renderer: &mut UIRenderer) {
+    fn render(&self, renderer: &mut dyn UIRenderer) {
         if !self.is_visible() {
             return;
         }
@@ -639,7 +639,7 @@ impl Widget for PanelWidget {
         }
 
         match event {
-            UIEvent::MouseButtonDown { button: MouseButton::Left, position, .. } => {
+            UIEvent::MouseButtonDown { button: crate::ui::events::MouseButton::Left, position, .. } => {
                 if self.hit_test(*position) {
                     // TODO: 处理拖拽和调整大小
                     return true;
@@ -654,7 +654,7 @@ impl Widget for PanelWidget {
         // 面板可以在这里处理动画
     }
 
-    fn render(&self, renderer: &mut UIRenderer) {
+    fn render(&self, renderer: &mut dyn UIRenderer) {
         if !self.is_visible() {
             return;
         }
@@ -703,7 +703,6 @@ pub trait UIRenderer {
 }
 
 /// 组件容器
-#[derive(Debug)]
 pub struct WidgetContainer {
     widgets: HashMap<WidgetId, Box<dyn Widget>>,
     root_widgets: Vec<WidgetId>,
@@ -746,7 +745,10 @@ impl WidgetContainer {
     }
 
     pub fn get_widget_mut(&mut self, id: WidgetId) -> Option<&mut dyn Widget> {
-        self.widgets.get_mut(&id).map(|w| w.as_mut())
+        match self.widgets.get_mut(&id) {
+            Some(widget) => Some(widget.as_mut()),
+            None => None,
+        }
     }
 
     pub fn handle_event(&mut self, event: &UIEvent) -> bool {

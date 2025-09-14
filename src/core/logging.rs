@@ -152,11 +152,12 @@ impl log::Log for SanjiLogger {
 /// 初始化日志系统
 pub fn init_logging(config: LogConfig) -> crate::EngineResult<()> {
     let logger = SanjiLogger::new(config)?;
+    let level_str = logger.config.level.clone();
     
     log::set_boxed_logger(Box::new(logger))
         .map_err(|e| crate::EngineError::RenderError(format!("初始化日志系统失败: {}", e)))?;
     
-    let level_filter = match logger.config.level.as_str() {
+    let level_filter = match level_str.as_str() {
         "trace" => LevelFilter::Trace,
         "debug" => LevelFilter::Debug,
         "info" => LevelFilter::Info,
